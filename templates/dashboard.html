@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    <span>SysMon</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" data-view="dashboard">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="nav-item" data-view="cpu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+      CPU
+    </a>
+    <a href="#" class="nav-item" data-view="memory">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19v-3M10 19v-8M14 19v-5M18 19v-10"/></svg>
+      Memory
+    </a>
+    <a href="#" class="nav-item" data-view="disk">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Disk
+    </a>
+    <a href="#" class="nav-item" data-view="network">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
+      Network
+    </a>
+    <a href="#" class="nav-item" data-view="processes">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Processes
+    </a>
+    <a href="#" class="nav-item" data-view="battery">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M7 11l2 2 4-4"/></svg>
+      Battery
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-btn" id="themeToggle" title="Toggle theme">
+      <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <div class="live-indicator">
+      <span class="dot"></span>
+      <span id="liveStatus">Live</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="page-title" id="pageTitle">Overview</h1>
+      <span class="page-subtitle" id="pageSubtitle">Real-time system metrics</span>
+    </div>
+    <div class="topbar-right">
+      <span class="uptime-badge" id="uptimeBadge">↑ --</span>
+      <button class="btn btn-outline" id="reportBtn">⚡ Health Report</button>
+      <div class="action-menu">
+        <button class="btn btn-ghost" id="actionsBtn">Actions ▾</button>
+        <div class="dropdown" id="actionsDropdown">
+          <button class="dropdown-item" onclick="doAction('refresh')">🔄 Refresh Metrics</button>
+          <button class="dropdown-item" onclick="doAction('clear_temp')">🗑 Clear Temp Files</button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item danger" onclick="confirmAction('restart')">♻️ Restart System</button>
+          <button class="dropdown-item danger" onclick="confirmAction('shutdown')">⏻ Shutdown System</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- VIEWS -->
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view active" id="view-dashboard">
+    <div class="metric-grid">
+      <div class="metric-card" data-view="cpu" onclick="switchView('cpu')">
+        <div class="card-header">
+          <span class="card-label">CPU Usage</span>
+          <span class="card-badge" id="cpuStatus">—</span>
+        </div>
+        <div class="card-value"><span id="cpuPercent">—</span><span class="unit">%</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill cpu-color" id="cpuBar" style="width:0%"></div></div>
+        <div class="card-meta" id="cpuMeta">— cores · — GHz</div>
+      </div>
+
+      <div class="metric-card" data-view="memory" onclick="switchView('memory')">
+        <div class="card-header">
+          <span class="card-label">RAM Usage</span>
+          <span class="card-badge" id="ramStatus">—</span>
+        </div>
+        <div class="card-value"><span id="ramPercent">—</span><span class="unit">%</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill ram-color" id="ramBar" style="width:0%"></div></div>
+        <div class="card-meta" id="ramMeta">— / — GB</div>
+      </div>
+
+      <div class="metric-card" data-view="disk" onclick="switchView('disk')">
+        <div class="card-header">
+          <span class="card-label">Disk Usage</span>
+          <span class="card-badge" id="diskStatus">—</span>
+        </div>
+        <div class="card-value"><span id="diskPercent">—</span><span class="unit">%</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill disk-color" id="diskBar" style="width:0%"></div></div>
+        <div class="card-meta" id="diskMeta">— / — GB</div>
+      </div>
+
+      <div class="metric-card" data-view="network" onclick="switchView('network')">
+        <div class="card-header">
+          <span class="card-label">Network</span>
+          <span class="card-badge healthy">Active</span>
+        </div>
+        <div class="net-values">
+          <div><span class="net-arrow">↓</span> <span id="netRecv">—</span> <span class="unit">KB/s</span></div>
+          <div><span class="net-arrow up">↑</span> <span id="netSent">—</span> <span class="unit">KB/s</span></div>
+        </div>
+        <div class="card-meta" id="netMeta">Total sent: — · recv: —</div>
+      </div>
+
+      <div class="metric-card" id="batteryCard" data-view="battery" onclick="switchView('battery')">
+        <div class="card-header">
+          <span class="card-label">Battery</span>
+          <span class="card-badge" id="battStatus">—</span>
+        </div>
+        <div class="card-value"><span id="battPercent">—</span><span class="unit">%</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill batt-color" id="battBar" style="width:0%"></div></div>
+        <div class="card-meta" id="battMeta">—</div>
+      </div>
+
+      <div class="metric-card" data-view="processes" onclick="switchView('processes')">
+        <div class="card-header">
+          <span class="card-label">Uptime</span>
+          <span class="card-badge healthy">Online</span>
+        </div>
+        <div class="uptime-display" id="uptimeDisplay">—</div>
+        <div class="card-meta" id="uptimeMeta">System is running</div>
+      </div>
+    </div>
+
+    <!-- LIVE CHARTS -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">CPU & RAM Usage</div>
+        <canvas id="cpuRamChart" height="120"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Network Traffic (KB/s)</div>
+        <canvas id="netChart" height="120"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Disk I/O (KB/s)</div>
+        <canvas id="diskChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CPU VIEW -->
+  <div class="view" id="view-cpu">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>CPU Overview</h3>
+        <div class="stat-list" id="cpuDetailStats"></div>
+      </div>
+      <div class="detail-card">
+        <h3>Per-Core Usage</h3>
+        <div class="core-grid" id="coreGrid"></div>
+      </div>
+      <div class="detail-card span2">
+        <h3>CPU Usage Over Time</h3>
+        <canvas id="cpuDetailChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY VIEW -->
+  <div class="view" id="view-memory">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Memory Usage</h3>
+        <div class="stat-list" id="memDetailStats"></div>
+      </div>
+      <div class="detail-card">
+        <h3>Swap</h3>
+        <div class="stat-list" id="swapStats"></div>
+      </div>
+      <div class="detail-card span2">
+        <h3>RAM Trend</h3>
+        <canvas id="ramDetailChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISK VIEW -->
+  <div class="view" id="view-disk">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Primary Disk</h3>
+        <div class="stat-list" id="diskDetailStats"></div>
+      </div>
+      <div class="detail-card">
+        <h3>Partitions</h3>
+        <div id="partitionList"></div>
+      </div>
+      <div class="detail-card span2">
+        <h3>Disk I/O (KB/s)</h3>
+        <canvas id="diskDetailChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- NETWORK VIEW -->
+  <div class="view" id="view-network">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Live Transfer</h3>
+        <div class="stat-list" id="netDetailStats"></div>
+      </div>
+      <div class="detail-card">
+        <h3>Total Counters</h3>
+        <div class="stat-list" id="netCounters"></div>
+      </div>
+      <div class="detail-card span2">
+        <h3>Network Traffic (KB/s)</h3>
+        <canvas id="netDetailChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- BATTERY VIEW -->
+  <div class="view" id="view-battery">
+    <div class="detail-grid">
+      <div class="detail-card span2">
+        <h3>Battery Status</h3>
+        <div id="batteryDetail" class="battery-detail-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCESSES VIEW -->
+  <div class="view" id="view-processes">
+    <div class="process-header">
+      <div class="process-tabs">
+        <button class="tab active" data-sort="cpu">Top CPU</button>
+        <button class="tab" data-sort="mem">Top Memory</button>
+      </div>
+      <button class="btn btn-outline small" onclick="loadProcesses()">↻ Refresh</button>
+    </div>
+    <div class="process-table-wrap">
+      <table class="process-table">
+        <thead>
+          <tr>
+            <th>PID</th><th>Name</th><th>CPU %</th><th>MEM %</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="processTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>System Health Report</h2>
+      <div class="modal-actions">
+        <button class="btn btn-outline small" id="downloadReportBtn">⬇ JSON</button>
+        <button class="modal-close" onclick="closeReport()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="reportContent">
+      <div class="loading-spinner">Analyzing system…</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM DIALOG -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal small-modal">
+    <div class="modal-header"><h2 id="confirmTitle">Confirm Action</h2></div>
+    <div class="modal-body">
+      <p id="confirmMessage"></p>
+      <div class="confirm-btns">
+        <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>
